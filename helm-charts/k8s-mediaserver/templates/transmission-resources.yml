@@ -66,8 +66,8 @@ data:
         "rpc-whitelist": "127.0.0.1",
         "rpc-whitelist-enabled": false,
         "scrape-paused-torrents-enabled": true,
-        "script-torrent-done-enabled": false,
-        "script-torrent-done-filename": "",
+        "script-torrent-done-enabled": {{ .Values.transmission.config.autoUnpack.enabled }},
+        "script-torrent-done-filename": {{ .Values.transmission.config.autoUnpack.scriptLocation | quote }},
         "seed-queue-enabled": false,
         "seed-queue-size": 10,
         "speed-limit-down": 100,
@@ -94,6 +94,17 @@ metadata:
 data:
   PGID: "{{ .Values.general.pgid }}"
   PUID: "{{ .Values.general.puid }}"
+---
+## UNRAR-SH
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: transmission-unrar-sh
+data:
+  unrar.sh: |
+    #!/bin/bash
+    echo "### Finding UnZipped Files config ###"
+    find /downloads/transmission/complete/ -name '*.rar' -execdir unrar e -o- {} \;
 ---
 ### DEPLOYMENT
 apiVersion: apps/v1
@@ -155,6 +166,9 @@ spec:
             - name: mediaserver-volume
               mountPath: "/downloads"
               subPath: "{{ .Values.general.storage.subPaths.downloads }}"
+            - name: unpack-sh-transmission
+              mountPath: /usr/bin/local/unrar.sh
+              subPath: unrar.sh
           {{- with .Values.transmission.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -172,6 +186,10 @@ spec:
           configMap:
             defaultMode: 493
             name: init-transmission-cm
+        - name: unpack-sh-transmission
+          configMap:
+            name: transmission-unrar-sh
+            defaultMode: 511
       {{- with .Values.general.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -119,6 +119,9 @@ transmission:
       enabled: false
       secretName: ""
   config:
+    autoUnpack:
+      enabled: true
+      scriptLocation: /usr/local/bin/unpack.sh
     auth: 
       enabled: false
       username: ""
